@@ -1,1 +1,1 @@
-web: python otppanel.py
+web: python otpchecker.py
